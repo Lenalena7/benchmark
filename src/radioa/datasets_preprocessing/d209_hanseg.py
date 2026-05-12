@@ -306,16 +306,22 @@ def convert_HanSeg(inputfolder: Path, outputfolder: Path):
 
 
 def preprocess(download_folder: Path):
-    target_folder = get_dataset_path() / "Dataset209_hanseg_mr_oar"
+    actual_download_dir = Path("/data/gas/radioactive_data/raw_dataset_downloads/hanseg/HaN-Seg/set_1")
+    
+    target_folder = Path("/data/gas/radioactive_data/datasets/Dataset209_hanseg_mr_oar")
 
-    actual_download_dir = download_folder / "HaN-Seg" / "HaN-Seg" / "set_1"
+    print(f"--- DEBUG START ---")
+    print(f"Looking for cases in: {actual_download_dir}")
+    
+    # 執行轉換
     convert_HanSeg(actual_download_dir, target_folder)
 
-
 def main():
-
-    pass
-
+    from radioa.utils.paths import get_raw_dataset_downloads_path
+    #pass
+    download_folder = get_raw_dataset_downloads_path()
+    print(f"Starting preprocess with download_folder: {download_folder}")
+    preprocess(download_folder)
 
 if __name__ == "__main__":
     main()

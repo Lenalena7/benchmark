@@ -2,6 +2,8 @@ from pathlib import Path
 from pathlib import Path
 from loguru import logger
 import torch
+import argparse
+torch.serialization.add_safe_globals([argparse.Namespace])
 import numpy as np
 import torch.nn.functional as F
 from typing import TypeVar

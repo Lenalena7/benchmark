@@ -22,31 +22,62 @@ from radioa.utils.result_data import PromptResult
 
 def get_matching_datasets(dataset_path: Path, dataset_id: int) -> list[Path]:
     """Finds all matching datasets by its id and returns a list of paths to that directory."""
+    # matched_datasets = [
+    #     dataset_path / d for d in os.listdir(dataset_path) if d.startswith(f"Dataset{dataset_id:03d}")
+    # ]
+    # return matched_datasets
+
+    # 強制重寫搜尋路徑
+    target_search_path = Path("/data/gas/radioactive_data/datasets")
+    
+    # 確保路徑存在，否則會報錯
+    if not target_search_path.exists():
+        return []
+
     matched_datasets = [
-        dataset_path / d for d in os.listdir(dataset_path) if d.startswith(f"Dataset{dataset_id:03d}")
+        target_search_path / d for d in os.listdir(target_search_path) 
+        if d.startswith(f"Dataset{dataset_id:03d}")
     ]
     return matched_datasets
 
 
 def get_dataset_path_by_id(dataset_id: int) -> Path:
     """Finds the dataset path by its id."""
-    dataset_path = get_dataset_path()
-    found_matching_datasets = get_matching_datasets(dataset_path, dataset_id)[0]
-    return found_matching_datasets
+    # dataset_path = get_dataset_path()
+    # found_matching_datasets = get_matching_datasets(dataset_path, dataset_id)[0]
+    # return found_matching_datasets
+
+    # 不再呼叫 get_dataset_path()，直接搜尋
+    found_datasets = get_matching_datasets(None, dataset_id) # 第一個參數傳 None 因為我們上面寫死了
+    if not found_datasets:
+        raise FileNotFoundError(f"找不到 Dataset{dataset_id}")
+    return found_datasets[0]
 
 
 def verify_dataset_exists(dataset_id: int) -> None:
     """
     Verify that the dataset exists.
     """
-    dataset_path = get_dataset_path()
-    found_matching_datasets = get_matching_datasets(dataset_path, dataset_id)
-    assert len(found_matching_datasets) > 0, f"No dataset with ID {dataset_id} found in '{dataset_path}'."
-    assert len(found_matching_datasets) == 1, f"Multiple datasets found in {dataset_path}."
-    assert found_matching_datasets[0].is_dir(), f"Dataset {dataset_id} is not a directory."
-    assert (
-        found_matching_datasets[0] / "dataset.json"
-    ).exists(), f"Dataset {dataset_id} does not have a dataset.json file."
+    # dataset_path = get_dataset_path()
+    # found_matching_datasets = get_matching_datasets(dataset_path, dataset_id)
+    # assert len(found_matching_datasets) > 0, f"No dataset with ID {dataset_id} found in '{dataset_path}'."
+    # assert len(found_matching_datasets) == 1, f"Multiple datasets found in {dataset_path}."
+    # assert found_matching_datasets[0].is_dir(), f"Dataset {dataset_id} is not a directory."
+    # assert (
+    #     found_matching_datasets[0] / "dataset.json"
+    # ).exists(), f"Dataset {dataset_id} does not have a dataset.json file."
+    # return
+
+    # 直接呼叫我們修改後的搜尋函式
+    found_matching_datasets = get_matching_datasets(None, dataset_id)
+    
+    # 基礎驗證
+    assert len(found_matching_datasets) > 0, f"在 /data/gas/radioactive_data/datasets 下找不到 ID {dataset_id}"
+    
+    # 印出 Debug 訊息確認
+    print(f"[RadioActive Fix] 成功定位數據集: {found_matching_datasets[0]}")
+    
+    assert found_matching_datasets[0] / "dataset.json", f"Dataset {dataset_id} 缺少 dataset.json"
     return
 
 

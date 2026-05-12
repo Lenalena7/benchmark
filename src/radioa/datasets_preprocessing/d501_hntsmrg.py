@@ -31,7 +31,9 @@ def preprocess(raw_dataset_path: Path):
     # ! IF THIS GETS EXTENDED TO CLASS 2 A CC NEEDS TO BE ADDED !
 
     # Did some mess up with the folder structure, but whatever.
-    data_path = raw_dataset_path / "HNTSMRG24_train" / "HNTSMRG24_train"
+    #data_path = raw_dataset_path / "HNTSMRG24_train" / "HNTSMRG24_train"
+    data_path = Path("/data/gas/radioactive_data/raw_dataset_downloads/hntsmrg")
+    
     target_path = get_dataset_path() / "Dataset501_hntsmrg_pre_primarytumor"
     (target_path / "imagesTr").mkdir(parents=True, exist_ok=True)
     (target_path / "labelsTr").mkdir(parents=True, exist_ok=True)

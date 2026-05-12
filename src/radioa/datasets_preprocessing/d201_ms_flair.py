@@ -84,6 +84,25 @@ def preprocess(raw_download_path: Path):
         flair_img.SetSpacing(new_spacing)
         flair_seg_img.SetSpacing(new_spacing)
 
+        # with TemporaryDirectory(dir="/dev/shm") as tempdir:
+        #     sitk.WriteImage(flair_seg_img, Path(tempdir) / "tmp_file.nii.gz")
+        #     inrrd: InstanceNrrd = InstanceNrrd.from_semantic_img(
+        #         Path(tempdir) / "tmp_file.nii.gz",
+        #         do_cc=True,
+        #         cc_kwargs={"dilation_kernel_radius": 0, "label_connectivity": 3},
+        #     )
+        #     array: list[np.ndarray] = [(cnt + 1) * arr for cnt, arr in enumerate(inrrd.get_instance_maps(class_id=1))]
+        #     instance_array = np.sum(array, axis=0).astype(np.uint16)
+        #     header = inrrd.get_vanilla_header()
+        #     nrrd.write(str(Path(tempdir) / "tmp_file.nrrd"), instance_array, header)
+
+        #     img = sitk.ReadImage(str(Path(tempdir) / "tmp_file.nrrd"))
+        #     sitk.WriteImage(img, label_target_path / f"{case_id}_Flair.nii.gz")
+        # sitk.WriteImage(flair_img, image_target_path / f"{case_id}_Flair_0000.nii.gz")
+
+
+        # --- 1. 將語意分割轉為實例分割 (Instance Segmentation) ---
+        # 這裡我們保留你原本使用的 InstanceNrrd 邏輯來處理 Connected Components
         with TemporaryDirectory(dir="/dev/shm") as tempdir:
             sitk.WriteImage(flair_seg_img, Path(tempdir) / "tmp_file.nii.gz")
             inrrd: InstanceNrrd = InstanceNrrd.from_semantic_img(
@@ -93,11 +112,22 @@ def preprocess(raw_download_path: Path):
             )
             array: list[np.ndarray] = [(cnt + 1) * arr for cnt, arr in enumerate(inrrd.get_instance_maps(class_id=1))]
             instance_array = np.sum(array, axis=0).astype(np.uint16)
-            header = inrrd.get_vanilla_header()
-            nrrd.write(str(Path(tempdir) / "tmp_file.nrrd"), instance_array, header)
-            img = sitk.ReadImage(str(Path(tempdir) / "tmp_file.nrrd"))
-            sitk.WriteImage(img, label_target_path / f"{case_id}_Flair.nii.gz")
-        sitk.WriteImage(flair_img, image_target_path / f"{case_id}_Flair_0000.nii.gz")
+
+        # --- 2. 直接將 Numpy 轉回 SimpleITK 並存檔，跳過 NRRD 讀寫 ---
+        # 注意：Numpy 是 (D, H, W) 或 (H, W, D)，ITK 是 (W, H, D)
+        # 根據你剛才 print 出來的 (256, 256, 26)，對應 ITK 格式需要轉置
+        instance_img = sitk.GetImageFromArray(instance_array.transpose(2, 1, 0))
+        
+        # 強制對齊原始影像的幾何資訊，解決 Header 解析出錯的問題
+        instance_img.SetSpacing(new_spacing)
+        instance_img.SetOrigin(flair_img.GetOrigin())
+        instance_img.SetDirection(flair_img.GetDirection())
+
+        # 直接儲存最終標籤
+        sitk.WriteImage(instance_img, str(label_target_path / f"{case_id}_Flair.nii.gz"))
+        
+        # 儲存原始影像 (維持原樣)
+        sitk.WriteImage(flair_img, str(image_target_path / f"{case_id}_Flair_0000.nii.gz"))
     # ------------------------------- Dataset Json ------------------------------- #
     with open(output_dir / "dataset.json", "w") as f:
         json.dump(
